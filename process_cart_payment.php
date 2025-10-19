@@ -5,7 +5,8 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 require_once 'config/auth.php';
-require_once 'config/database.php'; // This creates $pdo
+require_once 'config/database.php';
+require_once 'config/cart_functions.php';
 
 // Require authentication
 requireAuth();
@@ -20,8 +21,9 @@ if (empty($order_id)) {
     exit;
 }
 
-// Get order details from database
 $user_id = $_SESSION['user_id'];
+
+// Get order details
 $stmt = $pdo->prepare("SELECT * FROM orders WHERE order_id = ? AND user_id = ?");
 $stmt->execute([$order_id, $user_id]);
 $order = $stmt->fetch();
@@ -31,6 +33,9 @@ if (!$order) {
     header('Location: cart.php');
     exit;
 }
+
+// ✅ CLEAR THE CART AFTER SUCCESSFUL PAYMENT
+clearUserCart($user_id);
 
 // Get order items
 $stmt = $pdo->prepare("
@@ -52,9 +57,88 @@ $order_items = $stmt->fetchAll();
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root{
+            --accent: rgba(178, 111, 48, 0.83);
+            --accent-hover: rgb(213, 148, 34);
+            --muted: #6b7280;
+        }
+        *{box-sizing:border-box}
+        body{
+            margin:0; 
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.9) 100%), url('img/one.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            line-height:1.6;
+            -webkit-font-smoothing:antialiased;
+            font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        header{
+            position:sticky; top:0; z-index:20; 
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom:3px solid var(--accent);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .nav-row{
+            max-width:1200px; margin:auto; display:flex; 
+            align-items:center; justify-content:space-between; 
+            padding:18px 20px;
+        }
+        .brand{
+            font-weight:700; font-size:1.8rem; text-decoration:none; 
+            color: white; letter-spacing: 1px;
+        }
+        .nav-main {
+            display: flex;
+            gap: 40px;
+        }
+        .nav-main a {
+            color: white !important;
+            font-weight:500; 
+            text-decoration: none !important;
+            transition: color 0.3s ease !important;
+        }
+        .nav-main a:hover {
+            color: var(--accent) !important;
+        }
+        .cart-link{
+            color: white; 
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .auth-links {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .auth-links span {
+            color: white;
+            font-weight: 500;
+        }
+        .auth-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: #e53e3e;
+            transition: all 0.3s ease !important;
+        }
+        .auth-links a:hover {
+            background: #c53030 !important;
+        }
+        section {
+            padding: 60px 20px;
+        }
+        .container{
+            max-width:1200px;
+            margin:auto;
+        }
         .success-container {
             max-width: 800px;
-            margin: 100px auto;
+            margin: 0 auto;
             text-align: center;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -66,6 +150,11 @@ $order_items = $stmt->fetchAll();
             font-size: 4rem;
             color: #38a169;
             margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 2rem;
+            margin: 20px 0;
+            color: #0f172a;
         }
         .order-details {
             background: #f8f9fa;
@@ -101,9 +190,10 @@ $order_items = $stmt->fetchAll();
             height: 60px;
             object-fit: cover;
             border-radius: 8px;
+            margin-right: 15px;
         }
         .btn{
-            background: #b26f30; color:#fff; padding:12px 28px;
+            background: var(--accent); color:#fff; padding:12px 28px;
             border-radius:6px; text-decoration:none; font-weight:600;
             box-shadow: 0 4px 15px rgba(178, 111, 48, 0.3); 
             display:inline-block; border:none; cursor:pointer;
@@ -111,41 +201,47 @@ $order_items = $stmt->fetchAll();
             margin: 10px;
         }
         .btn:hover{
-            background: #d59422; 
+            background: var(--accent-hover); 
             box-shadow: 0 6px 18px rgba(178, 111, 48, 0.4);
         }
         .btn.ghost{
-            background:transparent; color:#b26f30; 
-            border:2px solid #b26f30;
-            box-shadow:none; padding:10px 24px;
+            background:transparent; color:var(--accent); 
+            border:2px solid var(--accent);
+            box-shadow:none;
         }
         .btn.ghost:hover{
-            background:#b26f30; color:#fff;
-            box-shadow: 0 4px 12px rgba(178, 111, 48, 0.4);
+            background:var(--accent); color:#fff;
+        }
+        footer{
+            border-top:1px solid rgba(255, 255, 255, 0.2); 
+            text-align:center; padding:35px;
+            color: rgba(255, 255, 255, 0.8); 
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            margin-top: 50px;
         }
     </style>
 </head>
 <body>
-    <!-- Include your header -->
     <header>
         <div class="nav-row">
             <a href="mus_home.php" class="brand">Symphony</a>
             <nav class="nav-main">
-                <a href="mus_home.php" class="nav">Home</a>
-                <a href="shop.php" class="nav">Shop</a>
-                <a href="mus_home.php #about" class="nav">About</a>
-                <a href=" mus_home.php #contact" class="nav">Contact</a>
-                <?php if(isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
-                    <a href="add_products.php" class="nav">Add Product</a>
+                <a href="mus_home.php">Home</a>
+                <a href="shop.php">Shop</a>
+                <a href="mus_home.php#about">About</a>
+                <a href="mus_home.php#contact">Contact</a>
+                <?php if(isset($_SESSION['role']) && $_SESSION['role'] == 'admin'): ?>
+                    <a href="add_products.php">Add Product</a>
                 <?php endif; ?>
             </nav>
             <a href="cart.php" class="cart-link">
-                <span class="icon">🛒</span> Cart
+                <span>🛒 Cart</span>
             </a>
             <div class="auth-links">
                 <span>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?>!
-                    <?php if(isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
-                        <span style="background: #b26f30; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; margin-left: 5px;">Admin</span>
+                    <?php if(isset($_SESSION['role']) && $_SESSION['role'] == 'admin'): ?>
+                        <span style="background: var(--accent); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">Admin</span>
                     <?php endif; ?>
                 </span>
                 <a href="logout.php">Logout</a>
@@ -168,7 +264,7 @@ $order_items = $stmt->fetchAll();
                         
                         <div class="detail-row">
                             <span><strong>Order ID:</strong></span>
-                            <span>#<?php echo $order['order_id']; ?></span>
+                            <span>#<?php echo htmlspecialchars($order['order_id']); ?></span>
                         </div>
                         <div class="detail-row">
                             <span><strong>Payment ID:</strong></span>
@@ -184,7 +280,7 @@ $order_items = $stmt->fetchAll();
                         </div>
                         <div class="detail-row">
                             <span><strong>Status:</strong></span>
-                            <span style="color: #38a169; font-weight: 600;"><?php echo ucfirst($order['order_status']); ?></span>
+                            <span style="color: #38a169; font-weight: 600;"><?php echo ucfirst($order['status']); ?></span>
                         </div>
                     </div>
 
@@ -193,11 +289,11 @@ $order_items = $stmt->fetchAll();
                         <h4>Order Items</h4>
                         <?php foreach($order_items as $item): ?>
                         <div class="order-item">
-                            <div style="display: flex; align-items: center; gap: 15px;">
+                            <div style="display: flex; align-items: center;">
                                 <img src="<?php echo htmlspecialchars($item['image_path'] ?: 'https://placehold.co/60x60/ff7a59/ffffff?text=Item'); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
-                                <div>
+                                <div style="text-align: left;">
                                     <div style="font-weight: 600;"><?php echo htmlspecialchars($item['title']); ?></div>
-                                    <div style="color: #6b7280; font-size: 0.9rem;">Qty: <?php echo $item['quantity']; ?></div>
+                                    <div style="color: var(--muted); font-size: 0.9rem;">Qty: <?php echo $item['quantity']; ?></div>
                                 </div>
                             </div>
                             <div style="font-weight: 600;">

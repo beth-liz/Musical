@@ -8,18 +8,15 @@ requireAuth();
 
 $user_id = $_SESSION['user_id'];
 
-// Get user's cart items and calculate total
-$cart_items = getUserCart($user_id);
-$cart_total = 0;
-$shipping_cost = 9.99;
-$tax_rate = 0.08;
-
-foreach ($cart_items as $item) {
-    $cart_total += $item['price'] * $item['quantity'];
+// Get cart data from POST
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $cart_total = floatval($_POST['cart_total']);
+    $cart_items = json_decode($_POST['cart_items'], true);
+} else {
+    // Redirect if accessed directly
+    header('Location: cart.php');
+    exit;
 }
-
-$tax_amount = $cart_total * $tax_rate;
-$grand_total = $cart_total + $tax_amount + $shipping_cost;
 
 // If cart is empty, redirect back to cart
 if (empty($cart_items)) {
@@ -27,38 +24,22 @@ if (empty($cart_items)) {
     exit;
 }
 
-// Handle form submission
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['razorpay_payment_id'])) {
-        // Payment successful - handle the success scenario
-        $payment_id = $_POST['razorpay_payment_id'];
-        $order_id = $_POST['razorpay_order_id'];
-        $signature = $_POST['razorpay_signature'];
-        
-        // Verify payment signature
-        $generated_signature = hash_hmac('sha256', $order_id . "|" . $payment_id, "YOUR_RAZORPAY_KEY_SECRET");
-        
-        if ($generated_signature == $signature) {
-            // Payment verification successful
-            // Clear the cart and create order record
-            clearUserCart($user_id);
-            
-            // Redirect to success page
-            header('Location: payment_success.php?payment_id=' . $payment_id . '&order_id=' . $order_id);
-            exit;
-        } else {
-            // Payment verification failed
-            $error = "Payment verification failed. Please try again.";
-        }
-    }
+// Calculate order details
+$subtotal = 0;
+foreach ($cart_items as $item) {
+    $subtotal += $item['price'] * $item['quantity'];
 }
+$shipping_cost = 9.99;
+$tax_rate = 0.08;
+$tax_amount = $subtotal * $tax_rate;
+$grand_total = $subtotal + $tax_amount + $shipping_cost;
 
-// Razorpay API credentials (Replace with your actual credentials)
-$key_id = "YOUR_RAZORPAY_KEY_ID";
+// Razorpay API credentials
+$key_id = "rzp_test_iZLI83hLdG7JqU";
 $key_secret = "YOUR_RAZORPAY_KEY_SECRET";
 
 // Create order in Razorpay
-require_once 'vendor/autoload.php'; // Make sure to install Razorpay PHP SDK
+require_once 'vendor/autoload.php';
 
 use Razorpay\Api\Api;
 
@@ -66,7 +47,7 @@ $api = new Api($key_id, $key_secret);
 
 // Create order
 $orderData = [
-    'receipt'         => 'rcptid_' . time(),
+    'receipt'         => 'order_' . time(),
     'amount'          => $grand_total * 100, // Amount in paise
     'currency'        => 'INR',
     'payment_capture' => 1 // Auto capture
@@ -389,7 +370,7 @@ try {
                 <a href="mus_home.php" class="nav">Home</a>
                 <a href="shop.php" class="nav">Shop</a>
                 <a href="mus_home.php #about" class="nav">About</a>
-                <a href="mus_home.php #contact" class="nav">Contact</a>
+                <a href=" mus_home.php #contact" class="nav">Contact</a>
                 <?php if(isAdmin()): ?>
                     <a href="add_products.php" class="nav">Add Product</a>
                 <?php endif; ?>
@@ -412,36 +393,34 @@ try {
         <section>
             <div class="container">
                 <h2>Complete Your Payment</h2>
-                
-                <?php if(isset($error)): ?>
-                    <div class="error-message">
-                        <i class="fas fa-exclamation-triangle"></i> <?php echo $error; ?>
-                    </div>
-                <?php endif; ?>
-                
                 <div class="payment-container">
                     <div class="payment-summary">
                         <h3 class="summary-title">Order Summary</h3>
                         
                         <div class="order-items">
                             <?php foreach($cart_items as $item): ?>
-                                <div class="order-item">
-                                    <span><?php echo htmlspecialchars($item['title']); ?> × <?php echo $item['quantity']; ?></span>
-                                    <span>₹<?php echo number_format($item['price'] * $item['quantity'], 2); ?></span>
+                            <div class="order-item">
+                                <div>
+                                    <strong><?php echo htmlspecialchars($item['title']); ?></strong>
+                                    <div style="font-size: 0.9rem; color: var(--muted);">
+                                        Qty: <?php echo $item['quantity']; ?> × ₹<?php echo number_format($item['price'], 2); ?>
+                                    </div>
                                 </div>
+                                <div>₹<?php echo number_format($item['price'] * $item['quantity'], 2); ?></div>
+                            </div>
                             <?php endforeach; ?>
                         </div>
                         
                         <div class="summary-row">
                             <span>Subtotal:</span>
-                            <span>₹<?php echo number_format($cart_total, 2); ?></span>
+                            <span>₹<?php echo number_format($subtotal, 2); ?></span>
                         </div>
                         <div class="summary-row">
                             <span>Shipping:</span>
                             <span>₹<?php echo number_format($shipping_cost, 2); ?></span>
                         </div>
                         <div class="summary-row">
-                            <span>Tax (<?php echo $tax_rate * 100; ?>%):</span>
+                            <span>Tax (8%):</span>
                             <span>₹<?php echo number_format($tax_amount, 2); ?></span>
                         </div>
                         <div class="summary-row summary-total">
@@ -451,33 +430,37 @@ try {
                     </div>
                     
                     <div class="payment-form">
+                        <h3 class="summary-title">Payment Details</h3>
+                        
                         <div class="payment-method-info">
                             <div class="payment-icon-large">
-                                <i class="fab fa-cc-paypal"></i>
+                                <i class="fas fa-credit-card"></i>
                             </div>
-                            <h3>PayPal Payment</h3>
-                            <p>You'll be redirected to Razorpay for secure payment processing</p>
+                            <h4>Razorpay Payment Gateway</h4>
+                            <p>Secure payment powered by Razorpay</p>
                         </div>
                         
-                        <form id="payment-form" method="POST">
-                            <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
-                            <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
-                            <input type="hidden" name="razorpay_signature" id="razorpay_signature">
-                            
-                            <button type="button" id="pay-button" class="btn">
-                                <i class="fas fa-lock"></i> Pay ₹<?php echo number_format($grand_total, 2); ?>
-                            </button>
-                        </form>
-                        
-                        <div style="text-align: center; margin-top: 20px;">
-                            <a href="cart.php" class="btn ghost">
-                                <i class="fas fa-arrow-left"></i> Back to Cart
-                            </a>
-                        </div>
-                        
-                        <div style="margin-top: 20px; text-align: center; font-size: 0.9rem; color: var(--muted);">
-                            <p><i class="fas fa-shield-alt"></i> Your payment is secure and encrypted</p>
-                        </div>
+                        <?php if(isset($error)): ?>
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <?php echo $error; ?>
+                            </div>
+                            <a href="cart.php" class="btn ghost">Back to Cart</a>
+                        <?php else: ?>
+                            <form id="payment-form" method="POST" action="payment_success.php">
+                                <input type="hidden" name="order_id" value="<?php echo $order_id; ?>">
+                                <input type="hidden" name="cart_total" value="<?php echo $grand_total; ?>">
+                                <input type="hidden" name="cart_items" value='<?php echo json_encode($cart_items); ?>'>
+                                
+                                <button type="button" class="btn" id="rzp-button">
+                                    <i class="fas fa-lock"></i> Pay Now - ₹<?php echo number_format($grand_total, 2); ?>
+                                </button>
+                                
+                                <a href="cart.php" class="btn ghost" style="margin-top: 15px;">
+                                    <i class="fas fa-arrow-left"></i> Back to Cart
+                                </a>
+                            </form>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -486,46 +469,63 @@ try {
 
     <footer>© <span id="year"></span> Symphony Musical Instruments. All rights reserved.</footer>
 
+    <?php if(!isset($error)): ?>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('year').textContent = new Date().getFullYear();
             
-            const payButton = document.getElementById('pay-button');
-            
-            payButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                const options = {
-                    "key": "<?php echo $key_id; ?>",
-                    "amount": "<?php echo $grand_total * 100; ?>",
-                    "currency": "INR",
-                    "name": "Symphony Musical Instruments",
-                    "description": "Order Payment",
-                    "image": "https://example.com/your_logo.jpg",
-                    "order_id": "<?php echo $order_id; ?>",
-                    "handler": function (response){
-                        document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
-                        document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
-                        document.getElementById('razorpay_signature').value = response.razorpay_signature;
-                        document.getElementById('payment-form').submit();
-                    },
-                    "prefill": {
-                        "name": "<?php echo htmlspecialchars($_SESSION['name']); ?>",
-                        "email": "<?php echo htmlspecialchars($_SESSION['email'] ?? 'customer@example.com'); ?>",
-                        "contact": "9999999999"
-                    },
-                    "notes": {
-                        "address": "Symphony Musical Instruments"
-                    },
-                    "theme": {
-                        "color": "#b26f30"
+            var options = {
+                "key": "<?php echo $key_id; ?>",
+                "amount": "<?php echo $grand_total * 100; ?>",
+                "currency": "INR",
+                "name": "Symphony Musical Instruments",
+                "description": "Order Payment",
+                "image": "img/logo3.png",
+                "order_id": "<?php echo $order_id; ?>",
+                "handler": function (response) {
+                    // Create a form to submit payment details
+                    var form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = 'payment_success.php';
+
+                    // Add all necessary fields
+                    var formData = {
+                        'razorpay_payment_id': response.razorpay_payment_id,
+                        'razorpay_order_id': response.razorpay_order_id,
+                        'razorpay_signature': response.razorpay_signature,
+                        'order_id': '<?php echo $order_id; ?>',
+                        'cart_total': '<?php echo $grand_total; ?>',
+                        'cart_items': '<?php echo addslashes(json_encode($cart_items)); ?>'
+                    };
+
+                    // Add all fields to form
+                    for (var key in formData) {
+                        var input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = formData[key];
+                        form.appendChild(input);
                     }
-                };
-                
-                const rzp = new Razorpay(options);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                },
+                "prefill": {
+                    "name": "<?php echo htmlspecialchars($_SESSION['name']); ?>",
+                    "email": "<?php echo htmlspecialchars($_SESSION['email']); ?>"
+                },
+                "theme": {
+                    "color": "#b26f30"
+                }
+            };
+            
+            var rzp = new Razorpay(options);
+            document.getElementById('rzp-button').onclick = function(e) {
                 rzp.open();
-            });
+                e.preventDefault();
+            }
         });
     </script>
+    <?php endif; ?>
 </body>
 </html>

@@ -19,10 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         removeFromCart($user_id, $product_id);
     } elseif (isset($_POST['clear_cart'])) {
         clearUserCart($user_id);
-    } elseif (isset($_POST['checkout'])) {
-        // Handle checkout process
-        header('Location: checkout.php');
-        exit;
     }
 }
 
@@ -48,6 +44,7 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
     <title>Shopping Cart - Symphony Musical Instruments</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <style>
         :root{
             --bg: #fbfbfb;
@@ -114,7 +111,6 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             gap: 40px;
         }
 
-        /* Navigation Links - Text color change with line effect */
         .nav-main a {
             color: white !important;
             font-weight:500; 
@@ -128,7 +124,6 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             transition: color 0.3s ease !important;
         }
 
-        /* Line effect on hover */
         .nav-main a::after {
             content: '';
             position: absolute;
@@ -140,7 +135,6 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             transition: width 0.3s ease;
         }
 
-        /* Hover effects */
         .nav-main a:hover {
             color: var(--accent) !important;
             background: transparent !important;
@@ -182,7 +176,6 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             line-height: 1;
         }
 
-        /* Auth links as buttons */
         .auth-links {
             display: flex;
             gap: 15px;
@@ -207,7 +200,6 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             background: #e53e3e;
         }
 
-        /* Auth link hover effects - button style */
         .auth-links a:hover {
             background: #c53030 !important;
             color: white !important;
@@ -335,40 +327,6 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             padding-top: 15px;
             border-top: 2px solid var(--accent);
         }
-        .payment-options {
-            margin: 25px 0;
-        }
-        .payment-title {
-            font-weight: 600;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-        .payment-methods {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .payment-method {
-            flex: 1;
-            text-align: center;
-            padding: 10px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .payment-method:hover {
-            border-color: var(--accent);
-            background: rgba(178, 111, 48, 0.05);
-        }
-        .payment-method.active {
-            border-color: var(--accent);
-            background: rgba(178, 111, 48, 0.1);
-        }
-        .payment-icon {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
-        }
         .checkout-btn {
             width: 100%;
             padding: 15px;
@@ -436,7 +394,7 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
                 <a href="mus_home.php" class="nav">Home</a>
                 <a href="shop.php" class="nav">Shop</a>
                 <a href="mus_home.php #about" class="nav">About</a>
-                    <a href=" mus_home.php #contact" class="nav">Contact</a>
+                <a href=" mus_home.php #contact" class="nav">Contact</a>
                 <?php if(isAdmin()): ?>
                     <a href="add_products.php" class="nav">Add Product</a>
                 <?php endif; ?>
@@ -536,29 +494,9 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
                             <span>₹<?php echo number_format($grand_total, 2); ?></span>
                         </div>
                         
-                        <div class="payment-options">
-                            <div class="payment-title">Payment Method</div>
-                            <div class="payment-methods">
-                                <div class="payment-method active">
-                                    <div class="payment-icon"><i class="fab fa-cc-paypal"></i></div>
-                                    <div>Razor Pay</div>
-                                </div>
-                                <div class="payment-method">
-                                    <div class="payment-icon"><i class="fas fa-credit-card"></i></div>
-                                    <div>Card</div>
-                                </div>
-                                <div class="payment-method">
-                                    <div class="payment-icon"><i class="fas fa-university"></i></div>
-                                    <div>Bank</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <form method="POST" action="payment.php">
-    <button type="submit" class="btn checkout-btn">
-        <i class="fas fa-lock"></i> Proceed to Checkout
-    </button>
-</form>
+                        <button id="rzp-button" class="btn checkout-btn">
+                            <i class="fas fa-lock"></i> Pay Now - ₹<?php echo number_format($grand_total, 2); ?>
+                        </button>
                         
                         <div class="continue-shopping">
                             <a href="shop.php" class="btn ghost">
@@ -574,19 +512,127 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
 
     <footer>© <span id="year"></span> Symphony Musical Instruments. All rights reserved.</footer>
 
-    <script>
+<script>
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('year').textContent = new Date().getFullYear();
             
-            // Payment method selection
-            const paymentMethods = document.querySelectorAll('.payment-method');
-            paymentMethods.forEach(method => {
-                method.addEventListener('click', () => {
-                    paymentMethods.forEach(m => m.classList.remove('active'));
-                    method.classList.add('active');
-                });
-            });
+            <?php if(!empty($cart_items)): ?>
+            var options = {
+                "key": "rzp_test_iZLI83hLdG7JqU",
+                "amount": "<?php echo $grand_total * 100; ?>",
+                "currency": "INR",
+                "name": "Symphony Musical Instruments",
+                "description": "Cart Order Payment",
+                "image": "img/logo3.png",
+                "handler": function (response) {
+                    // Show success message
+                    showSuccessMessage();
+                    
+                    // Clear cart immediately after successful payment
+                    fetch('clear_cart.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Wait 3 seconds, then redirect to success page
+                            setTimeout(() => {
+                                window.location.href = 'process_cart_payment.php?order_id=' + response.razorpay_order_id + '&payment_id=' + response.razorpay_payment_id;
+                            }, 3000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // Still redirect even if clearing fails
+                        setTimeout(() => {
+                            window.location.href = 'process_cart_payment.php?order_id=' + response.razorpay_order_id + '&payment_id=' + response.razorpay_payment_id;
+                        }, 3000);
+                    });
+                },
+                "prefill": {
+                    "name": "<?php echo htmlspecialchars($_SESSION['name']); ?>",
+                    "email": "<?php echo htmlspecialchars($_SESSION['email']); ?>"
+                },
+                "theme": {
+                    "color": "#b26f30"
+                }
+            };
+            
+            var rzp = new Razorpay(options);
+            document.getElementById('rzp-button').onclick = function(e) {
+                rzp.open();
+                e.preventDefault();
+            }
+            <?php endif; ?>
+            
         });
+
+        // Function to show success message
+        function showSuccessMessage() {
+            // Create message container
+            const messageDiv = document.createElement('div');
+            messageDiv.id = 'success-message';
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+                color: white;
+                padding: 40px 60px;
+                border-radius: 15px;
+                box-shadow: 0 10px 40px rgba(56, 161, 105, 0.4);
+                font-size: 1.5rem;
+                font-weight: 700;
+                text-align: center;
+                z-index: 9999;
+                animation: slideIn 0.5s ease-out;
+            `;
+            
+            messageDiv.innerHTML = `
+                <div style="margin-bottom: 15px;">
+                    <i class="fas fa-check-circle" style="font-size: 3rem;"></i>
+                </div>
+                <div>Payment Successful!</div>
+                <div style="font-size: 1rem; margin-top: 10px; font-weight: 500;">Cart cleared. Redirecting...</div>
+            `;
+            
+            document.body.appendChild(messageDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                messageDiv.style.animation = 'slideOut 0.5s ease-out';
+                setTimeout(() => {
+                    messageDiv.remove();
+                }, 500);
+            }, 5000);
+        }
     </script>
+
+    <style>
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+        }
+    </style>
 </body>
 </html>
