@@ -435,6 +435,8 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             <nav class="nav-main">
                 <a href="mus_home.php" class="nav">Home</a>
                 <a href="shop.php" class="nav">Shop</a>
+                <a href="mus_home.php #about" class="nav">About</a>
+                    <a href=" mus_home.php #contact" class="nav">Contact</a>
                 <?php if(isAdmin()): ?>
                     <a href="add_products.php" class="nav">Add Product</a>
                 <?php endif; ?>

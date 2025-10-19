@@ -59,6 +59,7 @@ section {
 }
 
 /* === ENHANCED HEADER (Cinzel, No Default Underline, Centered) === */
+/* === ENHANCED HEADER (Cinzel, No Default Underline, Centered) === */
 header{
   position:sticky; top:0; z-index:20; 
   background: rgba(0, 0, 0, 0.8);
@@ -70,7 +71,7 @@ header{
   max-width:var(--maxw); margin:auto; display:flex; 
   align-items:center; justify-content:space-between; 
   padding:18px 20px;
-  position: relative; /* Needed for absolute centering */
+  gap: 20px; /* Added gap for better spacing */
 }
 .brand{
   font-weight:700; font-size:1.8rem; text-decoration:none; 
@@ -79,14 +80,16 @@ header{
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0; /* Prevent brand from shrinking */
+  margin-right: auto; /* Push brand to left */
 }
 .nav-main {
-  /* Centering the main navigation items */
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
-  gap: 40px;
+  gap: 30px; /* Reduced gap to fit more items */
+  flex-wrap: nowrap;
+  justify-content: center;
+  flex: 1; /* Take available space */
+  max-width: 500px; /* Limit width to prevent overflow */
 }
 
 /* Navigation Links - Text color change with line effect */
@@ -101,6 +104,8 @@ header{
   display: inline-block;
   position: relative;
   transition: color 0.3s ease !important;
+  white-space: nowrap; /* Prevent text wrapping */
+  font-size: 0.95rem; /* Slightly smaller font */
 }
 
 /* Line effect on hover */
@@ -135,18 +140,28 @@ header{
   background-color: var(--accent);
 }
 
-/* Cart specific styling (Far Right) */
+/* Right side container for cart and auth links */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-shrink: 0; /* Prevent shrinking */
+  margin-left: auto; /* Push to right */
+}
+
+/* Cart specific styling */
 .cart-link{
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
   color: white; 
-  margin-left: auto;
   text-decoration: none;
   padding: 8px 16px;
   border-radius: 6px;
   transition: all 0.3s ease !important;
+  white-space: nowrap;
+  font-size: 0.95rem;
 }
 .cart-link:hover{
   background: var(--accent) !important;
@@ -162,14 +177,16 @@ header{
 .auth-links {
   display: flex;
   gap: 15px;
-  margin-left: 20px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .auth-links span {
   color: white;
   font-weight: 500;
   padding: 8px 0;
+  white-space: nowrap;
+  font-size: 0.95rem;
 }
 
 .auth-links a {
@@ -181,6 +198,8 @@ header{
   transition: all 0.3s ease !important;
   display: inline-block;
   background: #e53e3e;
+  white-space: nowrap;
+  font-size: 0.95rem;
 }
 
 /* Auth link hover effects - button style */
@@ -189,6 +208,64 @@ header{
   color: white !important;
   text-decoration: none !important;
   transform: translateY(-2px) !important;
+}
+
+/* Responsive adjustments */
+@media(max-width:1200px){
+  .nav-main {
+    gap: 20px;
+  }
+  .nav-main a {
+    font-size: 0.9rem;
+  }
+}
+
+@media(max-width:1000px){
+  .nav-main{
+    position: static; 
+    transform: none; 
+    width: 100%; 
+    justify-content: space-around; 
+    margin-top: 10px; 
+    order: 2;
+    max-width: none;
+  } 
+  .nav-row{
+    flex-direction: column; 
+    align-items: stretch;
+  } 
+  .brand{
+    width: 100%; 
+    text-align: center; 
+    order: 1;
+    margin-right: 0;
+    justify-content: center;
+  } 
+  .header-right {
+    order: 1;
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+    margin-left: 0;
+  }
+}
+@media(max-width:600px){
+  .nav-main{
+    flex-wrap: wrap; 
+    gap: 15px;
+  } 
+  .nav-main a{
+    margin: 0; 
+    font-size: 0.85rem;
+  } 
+  .header-right {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .auth-links {
+    flex-direction: column;
+    gap: 10px;
+  }
 }
 
 /* === GENERAL STYLES (Kept from previous professional design) === */
@@ -311,17 +388,344 @@ footer{
   margin-top: 50px;
 }
 
+/* New Sections */
+.section-title {
+  text-align: center;
+  font-size: 2.2rem;
+  margin-bottom: 50px;
+  color: white;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 30px;
+  margin-top: 50px;
+}
+
+.feature-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius);
+  padding: 30px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+}
+
+.feature-icon {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  color: var(--accent);
+}
+
+.feature-card h3 {
+  margin-bottom: 15px;
+  color: var(--accent-2);
+}
+
+.feature-card p {
+  color: var(--muted);
+}
+
+.categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+  margin-top: 40px;
+}
+
+.category-card {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  height: 250px;
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease;
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+}
+
+.category-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.category-card:hover img {
+  transform: scale(1.05);
+}
+
+.category-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  padding: 20px;
+  color: white;
+}
+
+.category-overlay h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.testimonials {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin-top: 50px;
+}
+
+.testimonial-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius);
+  padding: 30px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.testimonial-text {
+  font-style: italic;
+  margin-bottom: 20px;
+  color: var(--accent-2);
+}
+
+.testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.author-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+}
+
+.author-info h4 {
+  margin: 0;
+  color: var(--accent-2);
+}
+
+.author-info p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.newsletter {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 60px 40px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 50px;
+}
+
+.newsletter h3 {
+  color: white;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+}
+
+.newsletter p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 30px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.newsletter-form {
+  display: flex;
+  max-width: 500px;
+  margin: 0 auto;
+  gap: 10px;
+}
+
+.newsletter-form input {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+}
+
+.newsletter-form button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.newsletter-form button:hover {
+  background: var(--accent-hover);
+}
+
+/* About Section */
+.about-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  align-items: center;
+  margin-top: 40px;
+}
+
+.about-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.about-text p {
+  margin-bottom: 20px;
+}
+
+.about-image {
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.about-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Contact Section */
+.contact-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  margin-top: 40px;
+}
+
+.contact-info {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.contact-info h3 {
+  color: white;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.contact-info p {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.contact-info i {
+  color: var(--accent);
+  width: 20px;
+}
+
+.contact-form {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius);
+  padding: 30px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.contact-form .form-group {
+  margin-bottom: 20px;
+}
+
+.contact-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--accent-2);
+}
+
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.1);
+}
+
+.contact-form textarea {
+  height: 150px;
+  resize: vertical;
+}
+
 /* Responsive adjustments */
+@media(max-width:1200px){
+  .nav-main {
+    gap: 25px;
+  }
+}
+
 @media(max-width:1000px){
   .nav-main{position: static; transform: none; width: 100%; justify-content: space-around; margin-top: 10px; order: 2;} 
   .nav-row{flex-direction: column; align-items: flex-start;} 
   .brand{width: 100%; text-align: center; order: 1;} 
-  .cart-link{order: 1; position: absolute; right: 20px;}
+  .cart-link{order: 1; position: absolute; right: 20px; top: 18px;}
   .auth-links{order: 1; margin-left: 0; margin-top: 10px; width: 100%; justify-content: center;}
+  .newsletter-form {
+    flex-direction: column;
+  }
+  .about-content,
+  .contact-content {
+    grid-template-columns: 1fr;
+  }
 }
 @media(max-width:900px){.hero{flex-direction:column-reverse;text-align:center;}.hero img{max-width:100%;}}
-@media(max-width:600px){.nav-main{flex-wrap: wrap;} .nav-main a{margin: 5px 10px; font-size: 0.9rem;} .hero-text h1{font-size: 2.2rem;} .feature-grid{grid-template-columns: 1fr;}}
-
+@media(max-width:600px){
+  .nav-main{flex-wrap: wrap;} 
+  .nav-main a{margin: 5px 10px; font-size: 0.9rem;} 
+  .hero-text h1{font-size: 2.2rem;} 
+  .feature-grid{grid-template-columns: 1fr;} 
+  .section-title {font-size: 1.8rem;}
+  .cart-link {
+    position: static;
+    margin-right: 0;
+    justify-content: center;
+    width: 100%;
+    margin-top: 10px;
+  }
+}
 </style>
 </head>
 <body>
@@ -331,19 +735,25 @@ footer{
     <a href="#" class="brand">Symphony</a>
     <!-- Main Navigation Wrapper (Centered) -->
     <nav class="nav-main">
-    <a href="mus_home.php" class="nav active">Home</a>
-    <a href="shop.php" class="nav">Shop</a>
-    <?php if(isAdmin()): ?>
-        <a href="add_products.php" class="nav">Add Product</a>
-    <?php endif; ?>
-</nav>
-    <!-- Cart Link (Right Corner) -->
-    <a href="cart.php" class="cart-link">
-    <span class="icon">🛒</span> Cart (<span id="cart-count"><?php echo $cart_count; ?></span>)
-</a>
-    <div class="auth-links">
+      <a href="mus_home.php" class="nav active">Home</a>
+      <a href="shop.php" class="nav">Shop</a>
+      <a href="#about" class="nav">About</a>
+      <a href="#contact" class="nav">Contact</a>
+      <?php if(isAdmin()): ?>
+          <a href="add_products.php" class="nav">Add Product</a>
+      <?php endif; ?>
+    </nav>
+    <!-- Right side container for cart and auth -->
+    <div class="header-right">
+      <!-- Cart Link -->
+      <a href="cart.php" class="cart-link">
+        <span class="icon">🛒</span> Cart (<span id="cart-count"><?php echo $cart_count; ?></span>)
+      </a>
+      <!-- Auth Links -->
+      <div class="auth-links">
         <span>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?>!</span>
         <a href="logout.php">Logout</a>
+      </div>
     </div>
   </div>
 </header>
@@ -366,6 +776,62 @@ footer{
       <div class="feature"><div class="icon">🤝</div><h3>Expert Support</h3><p>Our team of musicians is here to help you find your sound.</p></div>
     </div>
   </section>
+
+  <!-- About Section -->
+  <section class="container" id="about">
+    <h2 class="section-title">About Symphony</h2>
+    <div class="about-content">
+      <div class="about-text">
+        <p>Founded in 2010, Symphony has been at the forefront of providing premium musical instruments to musicians of all levels. Our passion for music drives us to curate the finest collection of guitars, keyboards, drums, and accessories.</p>
+        <p>We believe that every musician deserves access to high-quality instruments that inspire creativity and enhance performance. Our team consists of experienced musicians who understand the nuances of sound and craftsmanship.</p>
+        <p>At Symphony, we're not just selling instruments - we're helping musicians find their voice and express their artistry through the power of music.</p>
+        <a href="shop.php" class="btn" style="margin-top: 20px;">Discover Our Collection</a>
+      </div>
+      <div class="about-image">
+        <img src="img/12.jpg" alt="Symphony Music Studio">
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section class="container" id="contact">
+    <h2 class="section-title">Get In Touch</h2>
+    <div class="contact-content">
+      <div class="contact-info">
+        <h3>Contact Information</h3>
+        <p><i class="fas fa-map-marker-alt"></i> 123 Music Street, Harmony Square, Mumbai, India</p>
+        <p><i class="fas fa-phone"></i> +91 98765 43210</p>
+        <p><i class="fas fa-envelope"></i> info@symphony.com</p>
+        <p><i class="fas fa-clock"></i> Monday - Saturday: 10:00 AM - 8:00 PM</p>
+        <p><i class="fas fa-clock"></i> Sunday: 12:00 PM - 6:00 PM</p>
+        
+        <h3 style="margin-top: 30px;">Visit Our Store</h3>
+        <p>Experience our instruments firsthand at our flagship store in Mumbai. Our expert staff will help you find the perfect instrument for your needs.</p>
+      </div>
+      <div class="contact-form">
+        <h3 style="color: var(--accent-2); margin-bottom: 20px;">Send Us a Message</h3>
+        <form id="contactForm">
+          <div class="form-group">
+            <label for="name">Your Name</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="subject">Subject</label>
+            <input type="text" id="subject" name="subject" required>
+          </div>
+          <div class="form-group">
+            <label for="message">Your Message</label>
+            <textarea id="message" name="message" required></textarea>
+          </div>
+          <button type="submit" class="btn" style="width: 100%;">Send Message</button>
+        </form>
+      </div>
+    </div>
+  </section>
 </main>
 
 <footer>© <span id="year"></span> Musical Instruments. All rights reserved.</footer>
@@ -373,6 +839,30 @@ footer{
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('year').textContent = new Date().getFullYear();
+  
+  // Smooth scrolling for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const targetId = this.getAttribute('href');
+      if(targetId === '#') return;
+      
+      const targetElement = document.querySelector(targetId);
+      if(targetElement) {
+        window.scrollTo({
+          top: targetElement.offsetTop - 100,
+          behavior: 'smooth'
+        });
+      }
+    });
+  });
+  
+  // Contact form submission
+  document.getElementById('contactForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    alert('Thank you for your message! We will get back to you soon.');
+    this.reset();
+  });
 });
 </script>
 </body>

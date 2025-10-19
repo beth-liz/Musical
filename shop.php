@@ -77,135 +77,214 @@ $cart_count = getCartItemCount($_SESSION['user_id']);
         }
 
         /* Header Styling */
-        header{
-            position:sticky; top:0; z-index:20; 
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom:3px solid var(--accent);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        .nav-row{
-            max-width:var(--maxw); margin:auto; display:flex; 
-            align-items:center; justify-content:space-between; 
-            padding:18px 20px;
-            position: relative;
-        }
-        .brand{
-            font-weight:700; font-size:1.8rem; text-decoration:none; 
-            color: white; 
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .nav-main {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 40px;
-        }
+        /* === ENHANCED HEADER (Cinzel, No Default Underline, Centered) === */
+header{
+  position:sticky; top:0; z-index:20; 
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom:3px solid var(--accent);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.nav-row{
+  max-width:var(--maxw); margin:auto; display:flex; 
+  align-items:center; justify-content:space-between; 
+  padding:18px 20px;
+  gap: 20px; /* Added gap for better spacing */
+}
+.brand{
+  font-weight:700; font-size:1.8rem; text-decoration:none; 
+  color: white; 
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0; /* Prevent brand from shrinking */
+  margin-right: auto; /* Push brand to left */
+}
+.nav-main {
+  display: flex;
+  gap: 30px; /* Reduced gap to fit more items */
+  flex-wrap: nowrap;
+  justify-content: center;
+  flex: 1; /* Take available space */
+  max-width: 500px; /* Limit width to prevent overflow */
+}
 
-        /* Navigation Links - Text color change with line effect */
-        .nav-main a {
-            color: white !important;
-            font-weight:500; 
-            padding: 8px 0;
-            text-decoration: none !important;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            display: inline-block;
-            position: relative;
-            transition: color 0.3s ease !important;
-        }
+/* Navigation Links - Text color change with line effect */
+.nav-main a {
+  color: white !important;
+  font-weight:500; 
+  padding: 8px 0;
+  text-decoration: none !important;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  transition: color 0.3s ease !important;
+  white-space: nowrap; /* Prevent text wrapping */
+  font-size: 0.95rem; /* Slightly smaller font */
+}
 
-        /* Line effect on hover */
-        .nav-main a::after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 2px;
-            bottom: 0;
-            left: 0;
-            background-color: var(--accent);
-            transition: width 0.3s ease;
-        }
+/* Line effect on hover */
+.nav-main a::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background-color: var(--accent);
+  transition: width 0.3s ease;
+}
 
-        /* Hover effects */
-        .nav-main a:hover {
-            color: var(--accent) !important;
-            background: transparent !important;
-            transform: none !important;
-        }
+/* Hover effects */
+.nav-main a:hover {
+  color: var(--accent) !important;
+  background: transparent !important;
+  transform: none !important;
+}
 
-        .nav-main a:hover::after {
-            width: 100%;
-        }
+.nav-main a:hover::after {
+  width: 100%;
+}
 
-        .nav-main a.active {
-            color: var(--accent) !important;
-        }
+.nav-main a.active {
+  color: var(--accent) !important;
+}
 
-        .nav-main a.active::after {
-            width: 100%;
-            background-color: var(--accent);
-        }
+.nav-main a.active::after {
+  width: 100%;
+  background-color: var(--accent);
+}
 
-        .cart-link{
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            color: white; 
-            margin-left: auto;
-            text-decoration: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            transition: all 0.3s ease !important;
-        }
-        .cart-link:hover{
-            background: var(--accent) !important;
-            color: white !important;
-            transform: translateY(-2px) !important;
-        }
-        .cart-link .icon {
-            font-size: 1.3rem;
-            line-height: 1;
-        }
+/* Right side container for cart and auth links */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-shrink: 0; /* Prevent shrinking */
+  margin-left: auto; /* Push to right */
+}
 
-        /* Auth links as buttons */
-        .auth-links {
-            display: flex;
-            gap: 15px;
-            margin-left: 20px;
-            align-items: center;
-        }
+/* Cart specific styling */
+.cart-link{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: white; 
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.3s ease !important;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+.cart-link:hover{
+  background: var(--accent) !important;
+  color: white !important;
+  transform: translateY(-2px) !important;
+}
+.cart-link .icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
 
-        .auth-links span {
-            color: white;
-            font-weight: 500;
-            padding: 8px 0;
-        }
+/* Auth links as buttons */
+.auth-links {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-shrink: 0;
+}
 
-        .auth-links a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 6px;
-            transition: all 0.3s ease !important;
-            display: inline-block;
-            background: #e53e3e;
-        }
+.auth-links span {
+  color: white;
+  font-weight: 500;
+  padding: 8px 0;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
 
-        /* Auth link hover effects - button style */
-        .auth-links a:hover {
-            background: #c53030 !important;
-            color: white !important;
-            text-decoration: none !important;
-            transform: translateY(-2px) !important;
-        }
+.auth-links a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.3s ease !important;
+  display: inline-block;
+  background: #e53e3e;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+
+/* Auth link hover effects - button style */
+.auth-links a:hover {
+  background: #c53030 !important;
+  color: white !important;
+  text-decoration: none !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Responsive adjustments */
+@media(max-width:1200px){
+  .nav-main {
+    gap: 20px;
+  }
+  .nav-main a {
+    font-size: 0.9rem;
+  }
+}
+
+@media(max-width:1000px){
+  .nav-main{
+    position: static; 
+    transform: none; 
+    width: 100%; 
+    justify-content: space-around; 
+    margin-top: 10px; 
+    order: 2;
+    max-width: none;
+  } 
+  .nav-row{
+    flex-direction: column; 
+    align-items: stretch;
+  } 
+  .brand{
+    width: 100%; 
+    text-align: center; 
+    order: 1;
+    margin-right: 0;
+    justify-content: center;
+  } 
+  .header-right {
+    order: 1;
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+    margin-left: 0;
+  }
+}
+@media(max-width:600px){
+  .nav-main{
+    flex-wrap: wrap; 
+    gap: 15px;
+  } 
+  .nav-main a{
+    margin: 0; 
+    font-size: 0.85rem;
+  } 
+  .header-right {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .auth-links {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
 
         /* Product Grid - Fixed 4 columns */
         .product-grid{
@@ -372,28 +451,32 @@ $cart_count = getCartItemCount($_SESSION['user_id']);
 </head>
 <body>
     <header>
-        <div class="nav-row">
-            <a href="mus_home.php" class="brand"></i> Symphony</a>
-            <nav class="nav-main">
-                <a href="mus_home.php" class="nav">Home</a>
-                <a href="shop.php" class="nav active">Shop</a>
-                <?php if(isAdmin()): ?>
-                    <a href="add_products.php" class="nav">Add Product</a>
-                <?php endif; ?>
-            </nav>
-            <a href="cart.php" class="cart-link">
-                <span class="icon"><i class="fas fa-shopping-cart"></i></span> Cart (<span id="cart-count"><?php echo $cart_count; ?></span>)
-            </a>
-            <div class="auth-links">
-                <span>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?>!
-                    <?php if(isAdmin()): ?>
-                        <span style="background: var(--accent); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; margin-left: 5px;">Admin</span>
-                    <?php endif; ?>
-                </span>
-                <a href="logout.php">Logout</a>
-            </div>
-        </div>
-    </header>
+  <div class="nav-row">
+    <a href="#" class="brand">Symphony</a>
+    <!-- Main Navigation Wrapper (Centered) -->
+    <nav class="nav-main">
+      <a href="mus_home.php" class="nav ">Home</a>
+      <a href="shop.php" class="nav active">Shop</a>
+      <a href="mus_home.php #about" class="nav">About</a>
+      <a href="mus_home.php #contact" class="nav">Contact</a>
+      <?php if(isAdmin()): ?>
+          <a href="add_products.php" class="nav">Add Product</a>
+      <?php endif; ?>
+    </nav>
+    <!-- Right side container for cart and auth -->
+    <div class="header-right">
+      <!-- Cart Link -->
+      <a href="cart.php" class="cart-link">
+        <span class="icon">🛒</span> Cart (<span id="cart-count"><?php echo $cart_count; ?></span>)
+      </a>
+      <!-- Auth Links -->
+      <div class="auth-links">
+        <span>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?>!</span>
+        <a href="logout.php">Logout</a>
+      </div>
+    </div>
+  </div>
+</header>
 
     <main>
         <section>
