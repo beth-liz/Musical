@@ -8,30 +8,11 @@ requireAuth();
 
 $user_id = $_SESSION['user_id'];
 
-// Handle cart actions
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['update_quantity'])) {
-        $product_id = $_POST['product_id'];
-        $quantity = intval($_POST['quantity']);
-        updateCartQuantity($user_id, $product_id, $quantity);
-    } elseif (isset($_POST['remove_item'])) {
-        $product_id = $_POST['product_id'];
-        removeFromCart($user_id, $product_id);
-    } elseif (isset($_POST['clear_cart'])) {
-        clearUserCart($user_id);
-    } elseif (isset($_POST['checkout'])) {
-        // Handle checkout process
-        header('Location: checkout.php');
-        exit;
-    }
-}
-
-// Get user's cart items
+// Get user's cart items and calculate total
 $cart_items = getUserCart($user_id);
-$cart_count = getCartItemCount($user_id);
 $cart_total = 0;
 $shipping_cost = 9.99;
-$tax_rate = 0.08; // 8% tax
+$tax_rate = 0.08;
 
 foreach ($cart_items as $item) {
     $cart_total += $item['price'] * $item['quantity'];
@@ -39,15 +20,74 @@ foreach ($cart_items as $item) {
 
 $tax_amount = $cart_total * $tax_rate;
 $grand_total = $cart_total + $tax_amount + $shipping_cost;
+
+// If cart is empty, redirect back to cart
+if (empty($cart_items)) {
+    header('Location: cart.php');
+    exit;
+}
+
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['razorpay_payment_id'])) {
+        // Payment successful - handle the success scenario
+        $payment_id = $_POST['razorpay_payment_id'];
+        $order_id = $_POST['razorpay_order_id'];
+        $signature = $_POST['razorpay_signature'];
+        
+        // Verify payment signature
+        $generated_signature = hash_hmac('sha256', $order_id . "|" . $payment_id, "YOUR_RAZORPAY_KEY_SECRET");
+        
+        if ($generated_signature == $signature) {
+            // Payment verification successful
+            // Clear the cart and create order record
+            clearUserCart($user_id);
+            
+            // Redirect to success page
+            header('Location: payment_success.php?payment_id=' . $payment_id . '&order_id=' . $order_id);
+            exit;
+        } else {
+            // Payment verification failed
+            $error = "Payment verification failed. Please try again.";
+        }
+    }
+}
+
+// Razorpay API credentials (Replace with your actual credentials)
+$key_id = "YOUR_RAZORPAY_KEY_ID";
+$key_secret = "YOUR_RAZORPAY_KEY_SECRET";
+
+// Create order in Razorpay
+require_once 'vendor/autoload.php'; // Make sure to install Razorpay PHP SDK
+
+use Razorpay\Api\Api;
+
+$api = new Api($key_id, $key_secret);
+
+// Create order
+$orderData = [
+    'receipt'         => 'rcptid_' . time(),
+    'amount'          => $grand_total * 100, // Amount in paise
+    'currency'        => 'INR',
+    'payment_capture' => 1 // Auto capture
+];
+
+try {
+    $razorpayOrder = $api->order->create($orderData);
+    $order_id = $razorpayOrder['id'];
+} catch (Exception $e) {
+    $error = "Error creating order: " . $e->getMessage();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopping Cart - Symphony Musical Instruments</title>
+    <title>Payment - Symphony Musical Instruments</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <style>
         :root{
             --bg: #fbfbfb;
@@ -114,7 +154,6 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             gap: 40px;
         }
 
-        /* Navigation Links - Text color change with line effect */
         .nav-main a {
             color: white !important;
             font-weight:500; 
@@ -128,7 +167,6 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             transition: color 0.3s ease !important;
         }
 
-        /* Line effect on hover */
         .nav-main a::after {
             content: '';
             position: absolute;
@@ -140,7 +178,6 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             transition: width 0.3s ease;
         }
 
-        /* Hover effects */
         .nav-main a:hover {
             color: var(--accent) !important;
             background: transparent !important;
@@ -182,7 +219,6 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             line-height: 1;
         }
 
-        /* Auth links as buttons */
         .auth-links {
             display: flex;
             gap: 15px;
@@ -207,7 +243,6 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             background: #e53e3e;
         }
 
-        /* Auth link hover effects - button style */
         .auth-links a:hover {
             background: #c53030 !important;
             color: white !important;
@@ -215,41 +250,36 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             transform: translateY(-2px) !important;
         }
 
-        /* Cart Styling */
-        .cart-container {
+        /* Payment Container */
+        .payment-container {
+            max-width: 800px;
+            margin: 0 auto;
             display: grid;
-            grid-template-columns: 1fr 400px;
+            grid-template-columns: 1fr 1fr;
             gap: 30px;
-            margin: 20px;
         }
-        .cart-items-container {
-            background: rgba(255, 255, 255, 0.95); 
+        .payment-summary {
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 30px;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .cart-summary-container {
-            background: rgba(255, 255, 255, 0.95); 
+        .payment-form {
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 30px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            height: fit-content;
-            position: sticky;
-            top: 100px;
         }
-        .cart-item{
-            display:flex; align-items:center; gap:25px; 
-            border-bottom:1px solid #e2e8f0; padding:20px 0;
-        }
-        .cart-item img{width:100px; height:80px; object-fit:cover; border-radius:8px;}
         .btn{
             background:var(--accent); color:#fff; padding:12px 28px;
             border-radius:6px; text-decoration:none; font-weight:600;
             box-shadow: 0 4px 15px rgba(178, 111, 48, 0.3); 
             display:inline-block; border:none; cursor:pointer;
             transition: all 0.2s ease;
+            width: 100%;
+            font-size: 1.1rem;
         }
         .btn:hover{
             background:var(--accent-hover); 
@@ -265,57 +295,7 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             box-shadow: 0 4px 12px rgba(178, 111, 48, 0.4);
         }
         h2{text-align:center; font-size:2.2rem; margin-bottom:50px; color: white; font-weight:700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);}
-        .empty-cart {
-            text-align: center;
-            color: var(--muted);
-            padding: 40px 0;
-            font-size: 1.1rem;
-        }
-        .qty-btn, .remove-btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-weight: 600;
-        }
-        .qty-btn:hover { background: var(--accent-hover); }
-        .remove-btn {
-            background: #e53e3e;
-        }
-        .remove-btn:hover {
-            background: #c53030;
-        }
-        .qty-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .qty-display {
-            min-width: 40px;
-            text-align: center;
-            font-weight: 600;
-        }
-        .item-details {
-            flex-grow: 1;
-        }
-        .item-title {
-            font-weight: 600;
-            font-size: 1.1rem;
-            margin-bottom: 5px;
-        }
-        .item-price {
-            color: var(--muted);
-            font-size: 0.95rem;
-        }
-        .item-total {
-            font-weight: 600;
-            color: var(--accent);
-            margin-top: 5px;
-        }
+        
         .summary-title {
             font-size: 1.5rem;
             margin-bottom: 20px;
@@ -327,6 +307,7 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             display: flex;
             justify-content: space-between;
             margin-bottom: 15px;
+            padding: 8px 0;
         }
         .summary-total {
             font-weight: 700;
@@ -335,60 +316,42 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             padding-top: 15px;
             border-top: 2px solid var(--accent);
         }
-        .payment-options {
-            margin: 25px 0;
+        .order-items {
+            margin: 20px 0;
         }
-        .payment-title {
-            font-weight: 600;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-        .payment-methods {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .payment-method {
-            flex: 1;
-            text-align: center;
-            padding: 10px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .payment-method:hover {
-            border-color: var(--accent);
-            background: rgba(178, 111, 48, 0.05);
-        }
-        .payment-method.active {
-            border-color: var(--accent);
-            background: rgba(178, 111, 48, 0.1);
-        }
-        .payment-icon {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
-        }
-        .checkout-btn {
-            width: 100%;
-            padding: 15px;
-            font-size: 1.1rem;
-            margin-top: 10px;
-        }
-        .continue-shopping {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .cart-header {
+        .order-item {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f1f1;
         }
-        .cart-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
+        .payment-method-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .payment-icon-large {
+            font-size: 3rem;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .success-message {
+            background: #c6f6d5;
+            color: #276749;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
         }
 
         /* Footer */
@@ -400,31 +363,21 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
             margin-top: 50px;
         }
 
-        /* Responsive adjustments */
+        /* Responsive */
         @media(max-width:1000px){
             .nav-main{position: static; transform: none; width: 100%; justify-content: space-around; margin-top: 10px; order: 2;} 
             .nav-row{flex-direction: column; align-items: flex-start;} 
             .brand{width: 100%; text-align: center; order: 1;} 
             .cart-link{order: 1; position: absolute; right: 20px;}
             .auth-links{order: 1; margin-left: 0; margin-top: 10px; width: 100%; justify-content: center;}
-            .cart-container {
+            .payment-container {
                 grid-template-columns: 1fr;
             }
         }
         @media(max-width:600px){
             .nav-main{flex-wrap: wrap;} 
             .nav-main a{margin: 5px 10px; font-size: 0.9rem;} 
-            .cart-items-container, .cart-summary-container {padding: 20px; margin: 10px;}
-            .cart-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-            .item-actions {
-                width: 100%;
-                display: flex;
-                justify-content: space-between;
-            }
+            .payment-summary, .payment-form {padding: 20px; margin: 10px;}
         }
     </style>
 </head>
@@ -436,13 +389,13 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
                 <a href="mus_home.php" class="nav">Home</a>
                 <a href="shop.php" class="nav">Shop</a>
                 <a href="mus_home.php #about" class="nav">About</a>
-                    <a href=" mus_home.php #contact" class="nav">Contact</a>
+                <a href="mus_home.php #contact" class="nav">Contact</a>
                 <?php if(isAdmin()): ?>
                     <a href="add_products.php" class="nav">Add Product</a>
                 <?php endif; ?>
             </nav>
             <a href="cart.php" class="cart-link">
-                <span class="icon">🛒</span> Cart (<span id="cart-count"><?php echo $cart_count; ?></span>)
+                <span class="icon">🛒</span> Cart
             </a>
             <div class="auth-links">
                 <span>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?>!
@@ -458,66 +411,26 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
     <main>
         <section>
             <div class="container">
-                <h2>Your Shopping Cart</h2>
-                <div class="cart-container">
-                    <div class="cart-items-container">
-                        <div class="cart-header">
-                            <h3 class="cart-title">Cart Items (<?php echo $cart_count; ?>)</h3>
-                            <?php if(!empty($cart_items)): ?>
-                                <form method="POST">
-                                    <button type="submit" name="clear_cart" class="btn ghost">Clear Cart</button>
-                                </form>
-                            <?php endif; ?>
-                        </div>
-                        
-                        <div id="cart-items">
-                            <?php if(empty($cart_items)): ?>
-                                <div class="empty-cart">
-                                    <i class="fas fa-shopping-cart" style="font-size: 3rem; margin-bottom: 20px; color: #d1d5db;"></i>
-                                    <p>Your cart is empty.</p>
-                                    <a href="shop.php" class="btn" style="margin-top: 15px;">Start Shopping Now</a>
-                                </div>
-                            <?php else: ?>
-                                <?php foreach($cart_items as $item): 
-                                    $item_total = $item['price'] * $item['quantity'];
-                                ?>
-                                <div class="cart-item">
-                                    <img src="<?php echo htmlspecialchars($item['image_path'] ?: 'https://placehold.co/100x80/ff7a59/ffffff?text=Item'); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
-                                    <div class="item-details">
-                                        <div class="item-title"><?php echo htmlspecialchars($item['title']); ?></div>
-                                        <div class="item-price">₹<?php echo number_format($item['price'], 2); ?></div>
-                                        <div class="item-total">₹<?php echo number_format($item_total, 2); ?></div>
-                                    </div>
-                                    <div class="item-actions">
-                                        <div class="qty-controls">
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="product_id" value="<?php echo $item['product_id']; ?>">
-                                                <input type="hidden" name="quantity" value="<?php echo $item['quantity'] - 1; ?>">
-                                                <button type="submit" name="update_quantity" class="qty-btn minus" <?php echo $item['quantity'] <= 1 ? 'disabled' : ''; ?>>−</button>
-                                            </form>
-                                            <span class="qty-display"><?php echo $item['quantity']; ?></span>
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="product_id" value="<?php echo $item['product_id']; ?>">
-                                                <input type="hidden" name="quantity" value="<?php echo $item['quantity'] + 1; ?>">
-                                                <button type="submit" name="update_quantity" class="qty-btn plus">+</button>
-                                            </form>
-                                        </div>
-                                        <form method="POST" style="display: inline; margin-top: 10px;">
-                                            <input type="hidden" name="product_id" value="<?php echo $item['product_id']; ?>">
-                                            <button type="submit" name="remove_item" class="remove-btn">
-                                                <i class="fas fa-trash-alt"></i> Remove
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </div>
+                <h2>Complete Your Payment</h2>
+                
+                <?php if(isset($error)): ?>
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i> <?php echo $error; ?>
                     </div>
-                    
-                    <?php if(!empty($cart_items)): ?>
-                    <div class="cart-summary-container">
+                <?php endif; ?>
+                
+                <div class="payment-container">
+                    <div class="payment-summary">
                         <h3 class="summary-title">Order Summary</h3>
+                        
+                        <div class="order-items">
+                            <?php foreach($cart_items as $item): ?>
+                                <div class="order-item">
+                                    <span><?php echo htmlspecialchars($item['title']); ?> × <?php echo $item['quantity']; ?></span>
+                                    <span>₹<?php echo number_format($item['price'] * $item['quantity'], 2); ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                         
                         <div class="summary-row">
                             <span>Subtotal:</span>
@@ -532,41 +445,40 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
                             <span>₹<?php echo number_format($tax_amount, 2); ?></span>
                         </div>
                         <div class="summary-row summary-total">
-                            <span>Total:</span>
+                            <span>Total Amount:</span>
                             <span>₹<?php echo number_format($grand_total, 2); ?></span>
                         </div>
-                        
-                        <div class="payment-options">
-                            <div class="payment-title">Payment Method</div>
-                            <div class="payment-methods">
-                                <div class="payment-method active">
-                                    <div class="payment-icon"><i class="fab fa-cc-paypal"></i></div>
-                                    <div>Razor Pay</div>
-                                </div>
-                                <div class="payment-method">
-                                    <div class="payment-icon"><i class="fas fa-credit-card"></i></div>
-                                    <div>Card</div>
-                                </div>
-                                <div class="payment-method">
-                                    <div class="payment-icon"><i class="fas fa-university"></i></div>
-                                    <div>Bank</div>
-                                </div>
+                    </div>
+                    
+                    <div class="payment-form">
+                        <div class="payment-method-info">
+                            <div class="payment-icon-large">
+                                <i class="fab fa-cc-paypal"></i>
                             </div>
+                            <h3>PayPal Payment</h3>
+                            <p>You'll be redirected to Razorpay for secure payment processing</p>
                         </div>
                         
-                        <form method="POST" action="payment.php">
-    <button type="submit" class="btn checkout-btn">
-        <i class="fas fa-lock"></i> Proceed to Checkout
-    </button>
-</form>
+                        <form id="payment-form" method="POST">
+                            <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+                            <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+                            <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+                            
+                            <button type="button" id="pay-button" class="btn">
+                                <i class="fas fa-lock"></i> Pay ₹<?php echo number_format($grand_total, 2); ?>
+                            </button>
+                        </form>
                         
-                        <div class="continue-shopping">
-                            <a href="shop.php" class="btn ghost">
-                                <i class="fas fa-arrow-left"></i> Continue Shopping
+                        <div style="text-align: center; margin-top: 20px;">
+                            <a href="cart.php" class="btn ghost">
+                                <i class="fas fa-arrow-left"></i> Back to Cart
                             </a>
                         </div>
+                        
+                        <div style="margin-top: 20px; text-align: center; font-size: 0.9rem; color: var(--muted);">
+                            <p><i class="fas fa-shield-alt"></i> Your payment is secure and encrypted</p>
+                        </div>
                     </div>
-                    <?php endif; ?>
                 </div>
             </div>
         </section>
@@ -578,13 +490,40 @@ $grand_total = $cart_total + $tax_amount + $shipping_cost;
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('year').textContent = new Date().getFullYear();
             
-            // Payment method selection
-            const paymentMethods = document.querySelectorAll('.payment-method');
-            paymentMethods.forEach(method => {
-                method.addEventListener('click', () => {
-                    paymentMethods.forEach(m => m.classList.remove('active'));
-                    method.classList.add('active');
-                });
+            const payButton = document.getElementById('pay-button');
+            
+            payButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const options = {
+                    "key": "<?php echo $key_id; ?>",
+                    "amount": "<?php echo $grand_total * 100; ?>",
+                    "currency": "INR",
+                    "name": "Symphony Musical Instruments",
+                    "description": "Order Payment",
+                    "image": "https://example.com/your_logo.jpg",
+                    "order_id": "<?php echo $order_id; ?>",
+                    "handler": function (response){
+                        document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                        document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                        document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                        document.getElementById('payment-form').submit();
+                    },
+                    "prefill": {
+                        "name": "<?php echo htmlspecialchars($_SESSION['name']); ?>",
+                        "email": "<?php echo htmlspecialchars($_SESSION['email'] ?? 'customer@example.com'); ?>",
+                        "contact": "9999999999"
+                    },
+                    "notes": {
+                        "address": "Symphony Musical Instruments"
+                    },
+                    "theme": {
+                        "color": "#b26f30"
+                    }
+                };
+                
+                const rzp = new Razorpay(options);
+                rzp.open();
             });
         });
     </script>
